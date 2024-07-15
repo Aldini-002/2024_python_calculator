@@ -1,142 +1,141 @@
-import tkinter as tk
-from tkinter import ttk
-import json
+import customtkinter as ctk
 
 
-def save_data(data):
-    with open("history.json", "w") as f:
-        json.dump(data, f)
+def update_expression(new_expression):
+    global expression
+    expression_label.configure(text=new_expression)
+    expression = new_expression
 
 
-def load_data():
+def update_history_expression(new_history_expression):
+    history_expression_label.configure(text=new_history_expression)
+
+
+def calculate_expression(expression):
+    global histories
     try:
-        with open("history.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
-
-
-def update_result_label():
-    result_label.config(text=num)
-
-
-def update_history_label():
-    history_text.config(state=tk.NORMAL)
-    history_text.delete("1.0", tk.END)
-    for item in history[::-1]:
-        history_text.insert(tk.END, f"{item['expression']} = {item['result']}\n")
-    history_text.config(state=tk.DISABLED)
-
-
-def clear():
-    global num
-    num = ""
-    update_result_label()
-
-
-def backspace():
-    global num
-    num = num[:-1]
-    update_result_label()
-
-
-def calculate():
-    global num
-    try:
-        result = str(eval(num.replace("x", "*")))
-        history.append({"expression": num, "result": result})
-        save_data(history)
-        num = result
+        result = str(eval(expression.replace('x', '*')))
+        if result.endswith('.0'):
+            result = result[:-2]
+        update_expression(result)
+        update_history_expression(expression)
+        histories.insert(0, (expression, result))
     except Exception as e:
-        print(f"Calculation error: {e}")
-        num = "Error"
-
-    update_result_label()
-    update_history_label()
+        print(e)
 
 
-app = tk.Tk()
-app.title("Calculator")
-app.geometry("350x400")
+def button_action(button_value):
+    global expression
+    if button_value == 'AC':
+        if expression == '':
+            update_history_expression('')
+        expression = ''
+        update_expression(expression)
+    elif button_value == '<':
+        expression = expression[:-1]
+        update_expression(expression)
+    elif button_value == '=':
+        calculate_expression(expression)
+    else:
+        expression += button_value
+        update_expression(expression)
 
-result_frame = ttk.Frame(app)
-result_frame.pack(expand=True, fill="both")
 
-history_frame = ttk.Frame(app)
-history_frame.pack(expand=True, fill="both")
+def history():
+    global histories
+    history_window = ctk.CTkToplevel(app)
+    history_window.title('History')
+    history_window.geometry('250x300')
+    history_window.resizable(False, False)
 
-action_frame = ttk.Frame(app)
-action_frame.pack(fill="x", padx=1, pady=1)
-action_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+    main_frame = ctk.CTkScrollableFrame(history_window, bg_color='#d1d5db', fg_color='#d1d5db')
+    main_frame.pack(expand=True, fill='both')
+    main_frame.grid_columnconfigure(0, weight=1)
+    
+    def button_action(x):
+        update_expression(x)
+        history_window.destroy()
 
+    for i, (expr, result) in enumerate(histories):
+        expr_label = ctk.CTkButton(main_frame, text=f'{expr} = ', width=0, font=('Helvetica', 12, 'bold'), command=lambda x=expr: button_action(x), fg_color='#d4d4d8', text_color='#52525b')
+        expr_label.grid(row=i, column=0, pady=2, sticky='e')
+        result_button = ctk.CTkButton(main_frame, text=result, width=0, font=('Helvetica', 12, 'bold'), command=lambda x=result: button_action(x), fg_color='#d4d4d8', text_color='#52525b')
+        result_button.grid(row=i, column=1, padx=(0, 5), pady=2, sticky='w')
+    
+    history_window.transient(app)
+    history_window.grab_set()
+    history_window.focus()
+    app.wait_window(history_window)
+
+
+histories = []
+expression = ''
+
+app = ctk.CTk()
+app.title('M Arif A')
+app.geometry('250x300')
+app.resizable(False, False)
+
+ctk.set_appearance_mode('light')
+
+# Frame
+container_frame = ctk.CTkFrame(app, bg_color='#d4d4d8', fg_color='#d4d4d8')
+container_frame.pack(expand=True, fill='both')
+
+history_expression_frame = ctk.CTkFrame(container_frame, bg_color='#d4d4d8', fg_color='#d4d4d8')
+history_expression_frame.pack(fill='x')
+
+expression_frame = ctk.CTkFrame(container_frame, bg_color='#d4d4d8', fg_color='#d4d4d8')
+expression_frame.pack(expand=True, fill='both')
+
+button_frame = ctk.CTkFrame(container_frame, bg_color='#d4d4d8', fg_color='#d4d4d8')
+button_frame.pack(fill='x', padx=2, pady=2)
+button_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+
+# Label
+button_history = ctk.CTkButton(
+    history_expression_frame, text='History', anchor='w', width=0,
+    font=('Helvetica', 12, 'bold'), command=lambda: history()
+)
+button_history.pack(side='left', padx=5, pady=(5, 0))
+
+history_expression_label = ctk.CTkLabel(
+    history_expression_frame, text='', font=('Helvetica', 14, 'bold'),
+    anchor='e', text_color='#a1a1aa'
+)
+history_expression_label.pack(side='right', padx=5, pady=(5, 0))
+
+expression_label = ctk.CTkLabel(
+    expression_frame, text='', font=('Helvetica', 16, 'bold'),
+    anchor='e', text_color='#52525b'
+)
+expression_label.pack(expand=True, fill='both', padx=5)
+
+# Buttons
 buttons = [
-    "AC",
-    "<",
-    "%",
-    "/",
-    "7",
-    "8",
-    "9",
-    "x",
-    "4",
-    "5",
-    "6",
-    "-",
-    "1",
-    "2",
-    "3",
-    "+",
-    "0",
-    ".",
-    "=",
+    'AC', '<', '%', '/',
+    '7', '8', '9', 'x',
+    '4', '5', '6', '-',
+    '1', '2', '3', '+',
+    '0', '.', '=',
 ]
 
-num = ""
-
-
-def action(x):
-    global num
-    if x == "AC":
-        clear()
-    elif x == "<":
-        backspace()
-    elif x == "=":
-        calculate()
-    else:
-        num = num + x
-        update_result_label()
-
-
-row = 0
-col = 0
-
-result_label = ttk.Label(result_frame, text=num, font=("Helvetica", 24))
-result_label.pack(side="right", padx=10, pady=10)
-
-history_label = ttk.Label(history_frame, text="History:")
-history_label.pack(side="top", padx=10, pady=10)
-
-history_text = tk.Text(history_frame, height=10, width=40, wrap=tk.WORD)
-history_text.pack(side="bottom", padx=10, pady=10)
-history_text.config(state=tk.DISABLED)
-
-history = load_data()
-update_history_label()
-
-for i, btn in enumerate(buttons):
-    if btn == "0":
-        button = ttk.Button(action_frame, text=btn, command=lambda x=btn: action(x))
-        button.grid(
-            row=row, column=col, columnspan=2, ipady=10, padx=1, pady=1, sticky="we"
-        )
+row, col = 0, 0
+for button in buttons:
+    btn = ctk.CTkButton(
+        button_frame, text=button, font=('Helvetica', 16, 'bold'),
+        fg_color='#e4e4e7', text_color='#52525b',
+        command=lambda x=button: button_action(x)
+    )
+    if button == '0':
+        btn.grid(row=row, column=col, columnspan=2, padx=1, pady=1, ipady=5, sticky='we')
         col += 1
     else:
-        button = ttk.Button(action_frame, text=btn, command=lambda x=btn: action(x))
-        button.grid(row=row, column=col, ipady=10, padx=1, pady=1, sticky="we")
-
+        btn.grid(row=row, column=col, padx=1, pady=1, ipady=5, sticky='we')
     col += 1
-    if col > 3:
+    if col == 4:
         col = 0
         row += 1
 
-app.mainloop()
+if __name__ == '__main__':
+    app.mainloop()
