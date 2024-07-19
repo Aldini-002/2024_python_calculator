@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 import mysql.connector
 
 # Import functions to be tested
-from db import fetch_history, insert_history, delete_all_history, update_expression, update_history_expression, calculate_expression, button_action
+from calculator_app import fetch_history, insert_history, delete_all_history, update_expression, update_history_expression, calculate_expression, button_action
 
 class TestCalculatorApp(unittest.TestCase):
 
